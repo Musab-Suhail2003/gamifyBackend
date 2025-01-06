@@ -13,6 +13,7 @@ class UserController {
     async googleLogin(req, res) {
         console.log('google login');
         const { token } = req.body;
+        console.log(`from google login. token: ${token}`);
 
         try {
             // Verify Google token
