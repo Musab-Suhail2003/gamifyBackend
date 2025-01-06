@@ -3,7 +3,6 @@ const dotenv = require('dotenv');
 dotenv.config();
 const mongoose = require('mongoose');
 const session = require('express-session');
-const passport = require('./config/passport'); // Import passport correctly
 const errorHandler = require('./middleware/errorHandler');
 const taskRoutes = require('./routes/taskRoutes');
 const milestoneRoutes = require('./routes/milestoneRoutes');
@@ -39,18 +38,7 @@ app.use('/milestones', milestoneRoutes);
 app.use('/quests', questRoutes);
 app.use('/characters', characterRoutes);
 app.use('/users', userRoutes);
-app.get('/auth/google',
-  passport.authenticate('google', { scope: ['profile', 'email'] }));
 
-app.get('/auth/google/callback', 
-  passport.authenticate('google', { failureRedirect: '/' }),
-  (req, res) => {
-      // Successful authentication, generate a token and send it in the response body
-      const token = jwt.sign({ id: req.user._id, email: req.user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
-      const user = req.user;
-      res.json({ token, user }); // Send the token in the response body
-  }
-);
 app.get('/', (req, res) => res.send('Hello World!'));
 app.use(errorHandler);
 
