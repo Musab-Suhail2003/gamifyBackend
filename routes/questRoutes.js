@@ -10,5 +10,6 @@ router.post('/', questController.createQuest);
 router.put('/:id', questController.updateQuest);
 router.delete('/:id', questController.deleteQuest);
 router.get('/user/:userId', questController.getQuestsByUserId);
+router.get('/pause/:id', questController.pauseQuest);
 
 module.exports = router;

@@ -1,11 +1,13 @@
 const mongoose = require('mongoose');
+const task = require('./TaskModel');
+const Task = require('./TaskModel');
 
 const MileStoneModel = mongoose.Schema({
+    questId: {type: mongoose.Schema.Types.ObjectId, ref: 'quest', required: true},
     title: { type: String, required: true },
     description: { type: String, required: true },
-    dueDate: { type: Date, required: true },
-    isCompleted: { type: Boolean, required: true },
-    tasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }]
+    days: { type: Number, required: true },
+    completionPercent: { type: Number, default: 0, min: 0, max: 100},
 });
 
 MileStoneModel.statics.addTask = async function(milestoneId, taskId) {
@@ -20,15 +22,26 @@ MileStoneModel.statics.addTask = async function(milestoneId, taskId) {
         throw error;
     }
 }
-MileStoneModel.methods.checkTasksCompletion = async function() {
-    const milestone = this;
-    const tasks = await mongoose.model('Task').find({ _id: { $in: milestone.tasks } });
-    const allCompleted = tasks.every(task => task.isCompleted);
-    if (allCompleted && !milestone.isCompleted) {
-        milestone.isCompleted = true;
-        await milestone.save();
+MileStoneModel.methods.checkCompletion = async function(milestoneId) {
+    try {
+        const tasks = await Task.find({ milestone_id: milestoneId });
+        let completion = 0;
+        for (let i = 0; i < tasks.length; i++) {
+            const task = tasks[i];
+            completion += task.isCompleted ? 1 : 0;
+        }
+        completion = (completion / tasks.length) * 100;
+        const updatedQuest = await this.findByIdAndUpdate(
+            questId,
+            { completionPercent: completion },
+            { new: true, runValidators: true }
+        );
+        return updatedQuest;
+    } catch (error) {
+        throw error;
     }
-};
+}
+
 
 const milestone = mongoose.model('milestone', MileStoneModel);
 

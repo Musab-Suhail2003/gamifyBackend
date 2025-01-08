@@ -1,21 +1,27 @@
+const milestone = require('../models/MileStoneModel');
 const MileStoneModel = require('../models/MileStoneModel');
 
 class milestoneController{
     // Create a new milestone
 async createMilestone(req, res){
-    try {
-        const milestone = new MileStoneModel(req.body);
-        await milestone.save();
-        res.status(201).json(milestone);
-    } catch (error) {
-        res.status(400).json({ error: error.message });
+    const { title, questId, completionPercent, description, days } = req.body;
+    console.log(`creating milestone:  ${title}, ${questId}`);
+        const newmilestone = new milestone({ questId, title,  description, days, completionPercent });
+    
+        try {
+            const savedmilstone = await newmilestone.save();
+            res.status(201).json(savedmilstone);
+            console.log('milestone created by ' + questId)
+        } catch (error) {
+            res.status(400).json({ message: error.message });
     }
 }
 
 async getMilestonesbyQuestId(req, res){
     try {
-        const milestones = await MileStoneModel.find({ questId: req.params.questId });
+        const milestones = await milestone.find({ questId: req.params.questId });
         res.status(200).json(milestones);
+        console.log('getting milestones by quest id ' + req.params.questId + ' milestones: ' + milestones);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -24,7 +30,7 @@ async getMilestonesbyQuestId(req, res){
 // Get all milestones
 async getAllMilestones (req, res) {
     try {
-        const milestones = await MileStoneModel.find();
+        const milestones = await milestone.find();
         res.status(200).json(milestones);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -34,7 +40,7 @@ async getAllMilestones (req, res) {
 // Get a single milestone by ID
 async getMilestoneById (req, res) {
     try {
-        const milestone = await MileStoneModel.findById(req.params.id);
+        const milestone = await milestone.findById(req.params.id);
         if (!milestone) {
             return res.status(404).json({ error: 'Milestone not found' });
         }
@@ -47,7 +53,7 @@ async getMilestoneById (req, res) {
 // Update a milestone by ID
 async updateMilestone (req, res) {
     try {
-        const milestone = await MileStoneModel.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        const milestone = await milestone.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
         if (!milestone) {
             return res.status(404).json({ error: 'Milestone not found' });
         }
@@ -60,7 +66,7 @@ async updateMilestone (req, res) {
 // Delete a milestone by ID
 async deleteMilestone (req, res){
     try {
-        const milestone = await MileStoneModel.findByIdAndDelete(req.params.id);
+        const milestone = await milestone.findByIdAndDelete(req.params.id);
         if (!milestone) {
             return res.status(404).json({ error: 'Milestone not found' });
         }
@@ -70,20 +76,10 @@ async deleteMilestone (req, res){
     }
 }
 
-// Add a task to a milestone
-async addTaskToMilestone(req, res) {
-    try {
-        const milestone = await MileStoneModel.addTask(req.params.id, req.body.taskId);
-        res.status(200).json(milestone);
-    } catch (error) {
-        res.status(400).json({ error: error.message });
-    }
-}
-
 // Check tasks completion for a milestone
 async checkTasksCompletion (req, res) {
     try {
-        const milestone = await MileStoneModel.findById(req.params.id);
+        const milestone = await milestone.findById(req.params.id);
         if (!milestone) {
             return res.status(404).json({ error: 'Milestone not found' });
         }

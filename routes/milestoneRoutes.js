@@ -10,7 +10,6 @@ router.post('/',  milestoneController.createMilestone);
 router.put('/:id',  milestoneController.updateMilestone);
 router.delete('/:id',  milestoneController.deleteMilestone);
 router.get('/quest/:questId', milestoneController.getMilestonesbyQuestId);
-router.post('/:id/task',  milestoneController.addTaskToMilestone);
 router.get('/:id/check-tasks', milestoneController.checkTasksCompletion);
 
 module.exports = router;

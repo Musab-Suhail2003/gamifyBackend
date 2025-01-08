@@ -29,6 +29,7 @@ class questController{
         try {
             const savedQuest = await newQuest.save();
             res.status(201).json(savedQuest);
+            console.log('quest created by ' + user_id)
         } catch (error) {
             res.status(400).json({ message: error.message });
         }
@@ -64,6 +65,21 @@ class questController{
             res.status(200).json(quests);
         } catch (error) {
             res.status(500).json({ message: error.message });
+        }
+    }
+
+    async pauseQuest (req, res){
+        try{
+            const id = req.params.id;
+            const quest = await Quest.findById(id);
+            if(quest === null) {
+                res.status(404).json({message: 'quest not found'});
+                return;
+                }
+            quest.paused = !quest.paused;
+            res.status(200).json({message: `paused quest with id: ${id}`});
+        } catch (error) {
+            res.status(500).json();
         }
     }
 }

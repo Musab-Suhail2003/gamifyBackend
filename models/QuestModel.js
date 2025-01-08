@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const milestone = require('./MileStoneModel');
+const milestoneController = require('../controllers/milestoneController');
 
 const QuestModel = mongoose.Schema(
     {
@@ -6,8 +8,7 @@ const QuestModel = mongoose.Schema(
         quest_name: {type: String, required: true},
         completion_percent: {type: Number, required: true, min: 0, max: 100},
         quest_description: {type: String, required: true},
-        milestones: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Milestone' }],
-        paused: {type: Boolean, default: false},
+        paused: {type: Boolean, default: true},
     }
 );
 QuestModel.statics.addMilestone = async function(questId, milestoneId) {
@@ -23,13 +24,14 @@ QuestModel.statics.addMilestone = async function(questId, milestoneId) {
     }
 };
 
+
 QuestModel.methods.checkCompletion = async function(questId) {
     try {
-        const quest = await this.findById(questId);
+        const milestones = await milestoneController.getMilestonesbyQuestId(questId);
         let completion = 0;
-        for (let i = 0; i < quest.milestones.length; i++) {
+        for (let i = 0; i < milestones.length; i++) {
             const milestone = await mongoose.model('milestone').findById(quest.milestones[i]);
-            completion += milestone.completion_percent;
+            completion += (milestone.completionPercent / 100);
         }
         completion = (completion / quest.milestones.length) * 100;
         const updatedQuest = await this.findByIdAndUpdate(

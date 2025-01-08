@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const findOrCreate = require('mongoose-findorcreate');
-const { Character } = require('./characterModel');
+const { Character, Item } = require('./characterModel');
 
 const UserModel = mongoose.Schema(
     {
@@ -11,9 +11,9 @@ const UserModel = mongoose.Schema(
         XP: {type: Number, required: true, min: 0, default: 0},
         coin: {type: Number, required: true, min: 0, default: 0},
         profilePicture: {type: String},
-        quests: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Quest' }],
         Character: { type: mongoose.Schema.Types.ObjectId, ref: 'Character' , unique: true},
-        ownedItems: [{type: mongoose.Schema.Types.ObjectId, ref: 'Item', }]
+        ownedItems: [{type: mongoose.Schema.Types.ObjectId, ref: 'Item', }],
+        questsCompleted: {type: Number, default: 0}
     }
 );
 
@@ -38,6 +38,33 @@ UserModel.plugin(findOrCreate);
 //     }
 // });
 
+UserModel.statics.addItem = async function(userId, itemDetails) {
+    try {
+        const user = await this.findById(userId);
+        const item0 = await ItemModel.find({name: itemDetails.name});
+        if (!user) {
+            throw new Error('user not found');
+        }
+        if(!item0){
+            // Create a new item
+            
+            const item = new Item(itemDetails);
+            await item.save();
+    
+            // Add the item to the character's items array
+            user.items.push(item._id);
+        }else{
+            user.items.push(item0._id);
+        }
+        
+        
+        await character.save();
+        return character;
+    } catch (error) {
+        throw error;
+    }
+};
+
 UserModel.statics.updateBio = async (userId, newBio) =>{
     try {
         const user = await this.findByIdAndUpdate(
@@ -48,6 +75,18 @@ UserModel.statics.updateBio = async (userId, newBio) =>{
         return user;
     } catch (error) {
         throw error;
+    }
+};
+UserModel.statics.addXpCoin = async function (coin, xp, userId) {
+    try {
+        const user = await this.findByIdAndUpdate(
+            userId,
+            {$inc: { coin: coin, xp: xp }},
+            {new: true, runValidators: true}
+        );
+        return user;
+    } catch (err) {
+        throw err; // Rethrow the error to handle it elsewhere
     }
 };
 

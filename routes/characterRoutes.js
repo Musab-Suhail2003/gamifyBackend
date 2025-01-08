@@ -7,5 +7,6 @@ router.get('/', characterController.getAllCharacters);
 router.get('/:id', characterController.getCharacterById);
 router.post('/:id', characterController.updateCharacter);
 router.get('/user/:userId', characterController.getCharacterbyUserId)
+router.post('/additem', characterController.addItemtoCharacter)
 
 module.exports = router;

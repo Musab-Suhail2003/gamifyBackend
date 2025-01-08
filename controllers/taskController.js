@@ -36,6 +36,7 @@ class TaskController {
                     task: newTask
                 }
             });
+            console.log(`task created ${newTask}`);
         } catch (err) {
             res.status(400).json({
                 status: 'fail',
@@ -95,13 +96,7 @@ class TaskController {
     // Get tasks by milestone ID
     async getTasksByMilestone(req, res) {
         try {
-            const tasks = await Task.find({ milestone: req.params.milestoneId });
-            if (!tasks.length) {
-                return res.status(404).json({
-                    status: 'fail',
-                    message: 'No tasks found for this milestone'
-                });
-            }
+            const tasks = await Task.find({ milestone_id: req.params.milestoneId });
             res.status(200).json({
                 status: 'success',
                 results: tasks.length,
