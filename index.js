@@ -52,7 +52,7 @@ const taskChangeStream = Task.watch();
 taskChangeStream.on('change', async (change) => {
   try {
     console.log('change stream event on tasks');
-    if (change.operationType === 'update' && change.updateDescription.updatedFields.isCompleted) {
+    if ((change.operationType === 'update' && change.updateDescription.updatedFields.isCompleted)|| change.operationType === 'insert') {
       const taskId = change.documentKey._id;
 
       // Find the updated task
@@ -151,7 +151,7 @@ milestoneChangeStream.on('change', async (change) => {
           completion_percent: questCompletionPercent,
         });
 
-        console.log(`${completedTasksCount} out of ${totalTasksCount} tasks done for milestone`);
+        console.log(`${completedMilestonesCount} out of ${totalMilestonesCount} tasks done for milestone`);
 
       }
     }

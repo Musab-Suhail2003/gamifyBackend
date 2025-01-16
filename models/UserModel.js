@@ -17,27 +17,28 @@ const UserModel = mongoose.Schema(
     }
 );
 
-UserModel.plugin(findOrCreate);
+//UserModel.plugin(findOrCreate);
 
 
-// // Create a Character instance after a new User is created
-// UserModel.post('save', async function(doc, next) {
-//     try {
-//         // Check if the character already exists to avoid duplicate creation
-//         const existingCharacter = await Character.findOne({ userId: doc._id });
-//         if (!existingCharacter) {
-//             const character = new Character({ userId: doc._id });
-//             console.log(character);
-//             await character.save();
-//             doc.Character = character._id;
-//             await doc.save();
-//         }
-//         next();
-//     } catch (error) {
-//         next(error);
-//     }
-// });
-
+ // Create a Character instance after a new User is created
+ //UserModel.post('save', async function(doc, next) {
+ //    try {
+ //        // Check if the character already exists to avoid duplicate creation
+ //       console.log('creating character post save');
+ //        const existingCharacter = await Character.findOne({ userId: doc._id });
+ //        if (!existingCharacter) {
+ //            const character = new Character({ userId: doc._id });
+ //            console.log(character);
+ //            await character.save();
+ //            doc.Character = character._id;
+ //            await doc.save();
+ //        }
+ //        next();
+ //    } catch (error) {
+ //        next(error);
+ //    }
+ //});
+ //
 UserModel.statics.addItem = async function(userId, itemDetails) {
     try {
         const user = await this.findById(userId);

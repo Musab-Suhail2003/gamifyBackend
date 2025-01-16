@@ -31,10 +31,12 @@ class UserController {
                 user = new User({ name, email, googleId: ticket.getUserId(), profilePicture: picture });
 
                 await user.save();
-                const character = new Character({userId: user.id});
-                user.Character = character;
+                const character = new Character({userId: user._id});
+                user.Character = character._id;
                 await character.save();
-                await user.save();
+                await user.update();
+                console.log(user);
+                console.log('asdasdasd');
             }
 
             // Generate JWT
@@ -46,6 +48,7 @@ class UserController {
             console.log(jwtToken + " " + user);
             res.status(200).json({ token: jwtToken, user });
         } catch (error) {
+            console.log(error.message);
             res.status(400).json({ error: 'Invalid Google token' });
         }
     }
