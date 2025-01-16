@@ -31,9 +31,11 @@ class UserController {
             });
             await user.save();
 
+            console.log('user made');
             // Create character
             const character = new Character({ userId: user._id });
             await character.save();
+            console.log('character made');
 
             // Update user with character reference
             user.Character = character._id;
