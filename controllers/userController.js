@@ -11,46 +11,48 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 class UserController {
     // Google Login: Verify Google token and create/find user
     async googleLogin(req, res) {
-        console.log('google login');
-        const { token } = req.body;
-
-        try {
-            // Verify Google token
-            const ticket = await client.verifyIdToken({
-                idToken: token,
-                audience: process.env.GOOGLE_CLIENT_ID,
+    console.log('google login');
+    const { token } = req.body;
+    try {
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        const { name, email, picture } = ticket.getPayload();
+        
+        let user = await User.findOne({ email });
+        if (!user) {
+            // Create new user
+            user = new User({ 
+                name, 
+                email, 
+                googleId: ticket.getUserId(), 
+                profilePicture: picture 
             });
+            await user.save();
 
-            const { name, email, picture } = ticket.getPayload();
+            // Create character
+            const character = new Character({ userId: user._id });
+            await character.save();
 
-            // Check if user exists in the database
-            let user = await User.findOne({ email });
+            // Update user with character reference
+            user.Character = character._id;
+            await user.save();
 
-            if (!user) {
-                // Create a new user if not found
-                user = new User({ name, email, googleId: ticket.getUserId(), profilePicture: picture });
-
-                await user.save();
-                const character = new Character({userId: user._id});
-                user.Character = character._id;
-                await character.save();
-                await user.update();
-                console.log(user);
-                console.log('asdasdasd');
-            }
-
-            // Generate JWT
-            const jwtToken = jwt.sign(
-                { id: user._id, email: user.email },
-                JWT_SECRET,
-                { expiresIn: '7d' }
-            );
-            console.log(jwtToken + " " + user);
-            res.status(200).json({ token: jwtToken, user });
-        } catch (error) {
-            console.log(error.message);
-            res.status(400).json({ error: 'Invalid Google token' });
+            console.log('New user created:', user);
         }
+
+        const jwtToken = jwt.sign(
+            { id: user._id, email: user.email },
+            JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+
+        res.status(200).json({ token: jwtToken, user });
+    } catch (error) {
+        console.error('Google login error:', error);
+        res.status(400).json({ error: 'Invalid Google token' });
+    }
     }
 
     // Google Callback (for OAuth-based flows)
