@@ -71,7 +71,6 @@ async updateCharacter(req, res) {
 
         const user = await UserModel.findById(existingCharacter.userId);
         console.log('logging user');
-        console.log(user);
 
         if(user.coin < updatesCount*100){
             return res.status(400).json({

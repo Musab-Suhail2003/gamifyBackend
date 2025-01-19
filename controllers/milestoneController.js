@@ -21,7 +21,6 @@ async getMilestonesbyQuestId(req, res){
     try {
         const milestones = await MileStoneModel.find({ questId: req.params.questId });
         res.status(200).json(milestones);
-        console.log('getting milestones by quest id ' + req.params.questId + ' milestones: ' + milestones);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

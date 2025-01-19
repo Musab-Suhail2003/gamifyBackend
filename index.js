@@ -89,39 +89,17 @@ taskChangeStream.on('change', async (change) => {
         }, { new: true });
 
         // Validate the quest and update user XP and coins
-        if (quest) {
+        if (task.isCompleted) {
           const difficulty = task.level;
           const userId = quest.user_id;
 
-          let xpIncrement = 0;
-          let coinsIncrement = 0;
+                    
+          const {xp, coins} = await calculateRewards(difficulty, milestone.days);
 
-          switch (difficulty) {
-            case 'EASY':
-              xpIncrement = 100;
-              coinsIncrement = 50;
-              break;
-            case 'MEDIUM':
-              xpIncrement = 150;
-              coinsIncrement = 75;
-              break;
-            case 'HARD':
-              xpIncrement = 200;
-              coinsIncrement = 100;
-              break;
-            default:
-              console.error('Invalid task difficulty:', difficulty);
-              return;
-          }
-
-          //dividing in half if late
-          if(milestone.days <= 0){
-            xpIncrement = xpIncrement/2;
-            coinsIncrement = coinsIncrement/2;
-          }
+          console.log(`xp ${xp}, coin ${coins}`);
           await users.updateOne(
             { _id: userId },
-            { $inc: { XP: xpIncrement, coin: coinsIncrement } }
+            { $inc: { XP: xp, coin: coins } }
           );
         }
       }
@@ -130,6 +108,37 @@ taskChangeStream.on('change', async (change) => {
     console.error('Error processing task change:', error);
   }
 });
+
+async function calculateRewards(difficulty, daysRemaining) {
+    if (!['EASY', 'MEDIUM', 'HARD'].includes(difficulty)) {
+    console.error('Invalid task difficulty:', difficulty);
+    return { xp: 0, coins: 0 };  // Return zeros instead of null/undefined
+  }
+  const baseRewards = {
+    'EASY': { xp: 100, coins: 50 },
+    'MEDIUM': { xp: 150, coins: 75 },
+    'HARD': { xp: 200, coins: 100 }
+  };
+
+  if (!baseRewards[difficulty]) {
+    console.error('Invalid task difficulty:', difficulty);
+    return null;
+  }
+
+  let { xp, coins } = baseRewards[difficulty];
+  
+  // Log days remaining and check if milestone is late
+  console.log('Days remaining:', daysRemaining);
+  if (daysRemaining <= 0) {
+    console.log('Milestone is late - reducing rewards by half');
+    xp = xp / 2;
+    coins = coins / 2;
+    console.log(`Reduced rewards - XP: ${xp}, Coins: ${coins}`);
+  }
+
+  return { xp, coins };
+}
+
 
 const milestoneChangeStream = MileStoneModel.watch();
 
@@ -150,19 +159,12 @@ milestoneChangeStream.on('change', async (change) => {
         const totalMilestonesCount = relatedMilestones.length;
         const questCompletionPercent = (completedMilestonesCount / totalMilestonesCount) * 100;
        
-        // Update the quest's completion percent
-        const q = await QuestModel.findByIdAndUpdate(milestone.questId, {
-          completion_percent: questCompletionPercent,
-        });
-        if(questCompletionPercent == 100){
-          console.log('quest completed by user id: ' + q.user_id) 
-          const user = await users.findByIdAndUpdate(
-            q.user_id,
-            {$inc: { questsCompleted: 1}},
-            {new: true, runValidators: true}
-          );
-        }
-
+        await QuestModel.findByIdAndUpdate(
+          milestone.questId,
+          { completion_percent: questCompletionPercent },
+          { new: true, runValidators: true }
+        );
+        
         console.log(`${completedMilestonesCount} out of ${totalMilestonesCount} milestones done for quest percentage set to: ${questCompletionPercent}`);
 
       }
@@ -171,6 +173,37 @@ milestoneChangeStream.on('change', async (change) => {
     console.error("Error processing milestone change:", error);
   }
 });
+
+const questChangestream = QuestModel.watch();
+questChangestream.on('change', async(change)=>{
+  console.log('change stream event on quests');
+  try{
+    if(change.operationType === 'update'){
+      const questId = change.documentKey._id;
+      const q = await QuestModel.findById(questId);
+        if(q.completion_percent == 100){
+
+          const relatedQuests = await QuestModel.find({user_id: q.user_id});
+          console.log('quest completed by user id: ' + q.user_id);
+
+          const completedQuestsCount = relatedQuests.filter(q => q.completion_percent === 100).length;
+
+          const user = await users.findByIdAndUpdate(
+            q.user_id,
+            {questsCompleted: completedQuestsCount},
+            {new: true, runValidators: true}
+          );
+        }
+
+    }
+  }
+  catch(error){
+    console.error(error);
+    
+    
+  }
+})
+
 
 
 cron.schedule('*/1 * * * *', async () => {

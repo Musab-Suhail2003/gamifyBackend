@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const findOrCreate = require('mongoose-findorcreate');
-const { Character, Item } = require('./characterModel');
+const { Character } = require('./characterModel');
 
 const UserModel = mongoose.Schema(
     {
@@ -20,53 +20,7 @@ const UserModel = mongoose.Schema(
 UserModel.plugin(findOrCreate);
 
 
- // Create a Character instance after a new User is created
- //UserModel.post('save', async function(doc, next) {
- //    try {
- //        // Check if the character already exists to avoid duplicate creation
- //       console.log('creating character post save');
- //        const existingCharacter = await Character.findOne({ userId: doc._id });
- //        if (!existingCharacter) {
- //            const character = new Character({ userId: doc._id });
- //            console.log(character);
- //            await character.save();
- //            doc.Character = character._id;
- //            await doc.save();
- //        }
- //        next();
- //    } catch (error) {
- //        next(error);
- //    }
- //});
- //
-//UserModel.statics.addItem = async function(userId, itemDetails) {
-//    try {
-//        const user = await this.findById(userId);
-//        const item0 = await ItemModel.find({name: itemDetails.name});
-//        if (!user) {
-//            throw new Error('user not found');
-//        }
-//        if(!item0){
-//            // Create a new item
-//
-//            const item = new Item(itemDetails);
-//            await item.save();
-//
-//            // Add the item to the character's items array
-//            user.items.push(item._id);
-//        }else{
-//            user.items.push(item0._id);
-//        }
-//
-//
-//        await character.save();
-//        return character;
-//    } catch (error) {
-//        throw error;
-//    }
-//};
-
-UserModel.statics.updateBio = async (userId, newBio) =>{
+ UserModel.statics.updateBio = async (userId, newBio) =>{
     try {
         const user = await this.findByIdAndUpdate(
             userId,

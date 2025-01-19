@@ -34,7 +34,6 @@ class UserController {
             console.log('user made');
             // Create character
             const character = new Character({ userId: user._id });
-            console.log('printing character: ' + character);
             await character.save();
             console.log('character made');
 
@@ -130,7 +129,6 @@ class UserController {
         try {
             const users = await User.find().sort({XP: -1});
 
-            console.log(`retuning users ${users}`);
 
             if (!users) {
                 return res.status(404).json({
