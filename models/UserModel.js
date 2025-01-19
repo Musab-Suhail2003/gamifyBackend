@@ -11,13 +11,13 @@ const UserModel = mongoose.Schema(
         XP: {type: Number, required: true, min: 0, default: 0},
         coin: {type: Number, required: true, min: 0, default: 0},
         profilePicture: {type: String},
-        Character: { type: mongoose.Schema.Types.ObjectId, ref: 'Character' , unique: true},
+        Character: { type: mongoose.Schema.Types.ObjectId, ref: 'characters' , unique: true},
         ownedItems: [{type: mongoose.Schema.Types.ObjectId, ref: 'Item', }],
         questsCompleted: {type: Number, default: 0}
     }
 );
 
-//UserModel.plugin(findOrCreate);
+UserModel.plugin(findOrCreate);
 
 
  // Create a Character instance after a new User is created
@@ -39,32 +39,32 @@ const UserModel = mongoose.Schema(
  //    }
  //});
  //
-UserModel.statics.addItem = async function(userId, itemDetails) {
-    try {
-        const user = await this.findById(userId);
-        const item0 = await ItemModel.find({name: itemDetails.name});
-        if (!user) {
-            throw new Error('user not found');
-        }
-        if(!item0){
-            // Create a new item
-            
-            const item = new Item(itemDetails);
-            await item.save();
-    
-            // Add the item to the character's items array
-            user.items.push(item._id);
-        }else{
-            user.items.push(item0._id);
-        }
-        
-        
-        await character.save();
-        return character;
-    } catch (error) {
-        throw error;
-    }
-};
+//UserModel.statics.addItem = async function(userId, itemDetails) {
+//    try {
+//        const user = await this.findById(userId);
+//        const item0 = await ItemModel.find({name: itemDetails.name});
+//        if (!user) {
+//            throw new Error('user not found');
+//        }
+//        if(!item0){
+//            // Create a new item
+//
+//            const item = new Item(itemDetails);
+//            await item.save();
+//
+//            // Add the item to the character's items array
+//            user.items.push(item._id);
+//        }else{
+//            user.items.push(item0._id);
+//        }
+//
+//
+//        await character.save();
+//        return character;
+//    } catch (error) {
+//        throw error;
+//    }
+//};
 
 UserModel.statics.updateBio = async (userId, newBio) =>{
     try {

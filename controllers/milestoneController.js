@@ -19,7 +19,7 @@ async createMilestone(req, res){
 
 async getMilestonesbyQuestId(req, res){
     try {
-        const milestones = await milestone.find({ questId: req.params.questId });
+        const milestones = await MileStoneModel.find({ questId: req.params.questId });
         res.status(200).json(milestones);
         console.log('getting milestones by quest id ' + req.params.questId + ' milestones: ' + milestones);
     } catch (error) {
@@ -30,7 +30,7 @@ async getMilestonesbyQuestId(req, res){
 // Get all milestones
 async getAllMilestones (req, res) {
     try {
-        const milestones = await milestone.find();
+        const milestones = await MileStoneModel.find();
         res.status(200).json(milestones);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -40,7 +40,7 @@ async getAllMilestones (req, res) {
 // Get a single milestone by ID
 async getMilestoneById (req, res) {
     try {
-        const milestone = await milestone.findById(req.params.id);
+        const milestone = await MileStoneModel.findById(req.params.id);
         if (!milestone) {
             return res.status(404).json({ error: 'Milestone not found' });
         }
@@ -52,8 +52,10 @@ async getMilestoneById (req, res) {
 
 // Update a milestone by ID
 async updateMilestone (req, res) {
+    console.log('inside update milestone');
     try {
-        const milestone = await milestone.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        console.log()
+        const milestone = await MileStoneModel.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
         if (!milestone) {
             return res.status(404).json({ error: 'Milestone not found' });
         }
@@ -66,7 +68,7 @@ async updateMilestone (req, res) {
 // Delete a milestone by ID
 async deleteMilestone (req, res){
     try {
-        const milestone = await milestone.findByIdAndDelete(req.params.id);
+        const milestone = await MileStoneModel.findByIdAndDelete(req.params.id);
         if (!milestone) {
             return res.status(404).json({ error: 'Milestone not found' });
         }
@@ -79,7 +81,7 @@ async deleteMilestone (req, res){
 // Check tasks completion for a milestone
 async checkTasksCompletion (req, res) {
     try {
-        const milestone = await milestone.findById(req.params.id);
+        const milestone = await MileStoneModel.findById(req.params.id);
         if (!milestone) {
             return res.status(404).json({ error: 'Milestone not found' });
         }

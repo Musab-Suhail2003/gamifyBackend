@@ -1,4 +1,5 @@
 const Task = require('../models/TaskModel');
+const MilestoneModel = require('../models/MileStoneModel');
 
 class TaskController {
 
@@ -47,7 +48,22 @@ class TaskController {
 
     // Update a task by ID
     async updateTask(req, res) {
+        console.log('asdsad');
         try {
+            const tsk = await Task.findById(req.params.id);
+            const mlstn = await MilestoneModel.findById(tsk.milestone_id);
+
+            console.log(mlstn.startTime);
+            if (mlstn.startTime == null) {
+              console.log('prevented task completion because milestone wasnt started');
+              res.status(400).json({
+                status: 'fail',
+                message: err.message
+              });
+
+
+            }
+
             const task = await Task.findByIdAndUpdate(req.params.id, req.body, {
                 new: true,
                 runValidators: true

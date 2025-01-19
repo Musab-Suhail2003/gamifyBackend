@@ -8,7 +8,9 @@ const MileStoneModel = mongoose.Schema({
     description: { type: String, required: true },
     days: { type: Number, required: true },
     completionPercent: { type: Number, default: 0, min: 0, max: 100},
-});
+    startTime: {type: Date},
+    
+}, {strict : false});
 
 MileStoneModel.statics.addTask = async function(milestoneId, taskId) {
     try {
@@ -44,5 +46,6 @@ MileStoneModel.methods.checkCompletion = async function(milestoneId) {
 
 
 const milestone = mongoose.model('milestone', MileStoneModel);
+
 
 module.exports = milestone;

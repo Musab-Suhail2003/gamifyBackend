@@ -10,7 +10,7 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 class UserController {
     // Google Login: Verify Google token and create/find user
-    async googleLogin(req, res) {
+  async googleLogin(req, res) {
     console.log('google login');
     const { token } = req.body;
     try {
@@ -34,6 +34,7 @@ class UserController {
             console.log('user made');
             // Create character
             const character = new Character({ userId: user._id });
+            console.log('printing character: ' + character);
             await character.save();
             console.log('character made');
 
@@ -55,7 +56,7 @@ class UserController {
         console.error('Google login error:', error);
         res.status(400).json({ error: 'Invalid Google token' });
     }
-    }
+  }
 
     // Google Callback (for OAuth-based flows)
     async googleCallback(req, res) {
@@ -127,7 +128,7 @@ class UserController {
 
     async getAllUsers(req, res){
         try {
-            const users = await User.find().sort({XP: 1});
+            const users = await User.find().sort({XP: -1});
 
             console.log(`retuning users ${users}`);
 
