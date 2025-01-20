@@ -12,6 +12,7 @@ const userRoutes = require('./routes/userRoutes');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const cron = require('node-cron');
+const sendNotification = require('./services/notification');
 
 dotenv.config();
 const app = express();
@@ -25,7 +26,7 @@ mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.log('Could not connect: ', err));
 
-app.use(express.json()); // Ensure you can parse JSON bodies
+app.use(express.json());
 app.use(session({
     resave: false,
     saveUninitialized: true,
@@ -37,7 +38,16 @@ app.use('/milestones', milestoneRoutes);
 app.use('/quests', questRoutes);
 app.use('/characters', characterRoutes);
 app.use('/users', userRoutes);
-
+app.post('/sendnotification', (req, res) => {
+  const { deviceToken, title, body } = req.body; 
+  try {
+    sendNotification(deviceToken, title, body); 
+    res.status(200).send({ success: true, message: 'Notification sent successfully!' });
+  } catch (error) {
+    console.error('Error sending notification:', error);
+    res.status(500).send({ success: false, message: 'Failed to send notification', error });
+  }
+});
 app.get('/', (req, res) => res.send('Hello World!'));
 app.use(errorHandler);
 
@@ -56,25 +66,20 @@ taskChangeStream.on('change', async (change) => {
     if ((change.operationType === 'update' && change.updateDescription.updatedFields.isCompleted)|| change.operationType === 'insert') {
       const taskId = change.documentKey._id;
 
-      // Find the updated task
       const task = await Task.findById(taskId);
       if (!task || !task.milestone_id) return;
 
-      // Get all tasks under the same milestone
       const relatedTasks = await Task.find({ milestone_id: task.milestone_id });
 
-      // Calculate completion percentage for the milestone
       const completedTasksCount = relatedTasks.filter(t => t.isCompleted).length;
       const totalTasksCount = relatedTasks.length;
       const milestoneCompletionPercent = (completedTasksCount / totalTasksCount) * 100;
 
-      // Update the milestone's completion percentage
       await MileStoneModel.findByIdAndUpdate(task.milestone_id, {
         completionPercent: milestoneCompletionPercent,
       });
       console.log(`${completedTasksCount} out of ${totalTasksCount} tasks done for milestone`);
 
-      // Check if the milestone is 100% completed
       const milestone = await MileStoneModel.findById(task.milestone_id);
       if (milestone && milestone.questId) {
         const relatedMilestones = await MileStoneModel.find({ questId: milestone.questId });
@@ -88,7 +93,6 @@ taskChangeStream.on('change', async (change) => {
           completion_percent: questCompletionPercent,
         }, { new: true });
 
-        // Validate the quest and update user XP and coins
         if (task.isCompleted) {
           const difficulty = task.level;
           const userId = quest.user_id;
@@ -112,7 +116,7 @@ taskChangeStream.on('change', async (change) => {
 async function calculateRewards(difficulty, daysRemaining) {
     if (!['EASY', 'MEDIUM', 'HARD'].includes(difficulty)) {
     console.error('Invalid task difficulty:', difficulty);
-    return { xp: 0, coins: 0 };  // Return zeros instead of null/undefined
+    return { xp: 0, coins: 0 };  
   }
   const baseRewards = {
     'EASY': { xp: 100, coins: 50 },
@@ -127,7 +131,6 @@ async function calculateRewards(difficulty, daysRemaining) {
 
   let { xp, coins } = baseRewards[difficulty];
   
-  // Log days remaining and check if milestone is late
   console.log('Days remaining:', daysRemaining);
   if (daysRemaining <= 0) {
     console.log('Milestone is late - reducing rewards by half');
@@ -148,10 +151,8 @@ milestoneChangeStream.on('change', async (change) => {
     if (change.operationType === 'update') {
       const milestoneId = change.documentKey._id;
 
-      // Find the updated milestone
       const milestone = await MileStoneModel.findById(milestoneId);
       if (milestone) {
-        // Get all milestones under the same quest
         const relatedMilestones = await MileStoneModel.find({ questId: milestone.questId });
 
         // Calculate quest completion percent
@@ -212,32 +213,63 @@ cron.schedule('*/1 * * * *', async () => {
         
         console.log('Cron Job Checking....');
 
-        // Find milestones where startTime is NOT null, has passed, and days > 0
-        const milestonesToUpdate = await MileStoneModel.find({
-            startTime: { $ne: null, $lte: now }, // Ensure startTime is not null and has passed
-            days: { $gt: 0 },                   // Ensure there are remaining days
-        });
+         const milestonesToUpdate = await MileStoneModel.find({
+            startTime: { $ne: null }
+         });
+
+    console.log(`Found ${milestonesToUpdate.length} milestones to update.`);
 
         for (const milestone of milestonesToUpdate) {
-            // Calculate the difference in milliseconds between now and startTime
             const diffInMs = now - milestone.startTime;
-
-            // Calculate how many full days have passed
-            const daysPast = Math.floor(diffInMs / (1000 * 60 * 60 * 24)); // 1 day = 86400000 ms
-
+            const daysPast = Math.floor(diffInMs / (1000 * 60)); // 1 day passes per 1 minute
+            console.log('days past  '+daysPast); 
+            const quest = await QuestModel.findById(milestone.questId);
+            const user = await users.findById(quest.user_id);
             if (daysPast > 0) {
-                const newDays = Math.max(milestone.days - daysPast, 0); // Ensure days do not go below 0
-                console.log(`Milestone ID: ${milestone._id}, Days Remaining: ${milestone.days} -> ${newDays}`);
-
-                // Update the days and startTime to reflect the adjustment
+                const oldDays = milestone.days;
+                const newDays = Math.max(milestone.days - daysPast, 0);
+                
+                console.log(`Milestone ID: ${milestone._id}, Days Remaining: ${oldDays} -> ${newDays}`);
+                
+                // Only send notification if days actually decreased
+                if (newDays < oldDays && user?.fcm_token) {
+                    const daysDecreased = oldDays - newDays;
+                    try {
+                        await sendNotification(
+                            user.fcm_token,
+                            'Milestone Update',
+                            `Your milestone "${milestone.title}" has ${newDays} days remaining.`
+                        );
+                        console.log(`Notification sent for milestone: ${milestone._id}`);
+                    } catch (error) {
+                        console.error(`Failed to send notification for milestone ${milestone._id}:`, error);
+                    }
+                }
+                
                 milestone.days = newDays;
-                milestone.startTime = new Date(milestone.startTime.getTime() + daysPast * (1000 * 60 * 60 * 24)); // Advance startTime
-                await milestone.save(); // Save the updated milestone
+                milestone.startTime = new Date(milestone.startTime.getTime() + daysPast * (1000 * 60 * 60 * 24));
+                await milestone.save();
             }
-        }
+            else if (daysPast <= 0 && milestone.completionPercent < 100 ) {
+                console.log('inside zero days left condition for cron job');
+                    try {
+                        await sendNotification(
+                            user.fcm_token,
+                            'Milestone Update for: ' + milestone.title + ' belonging to quest ' + quest.quest_name,
+                            ` You've missed the deadline. However you can still gain half the rewards by completing it.`
+                        );
+                        console.log(`Notification sent for milestone: ${milestone._id}`);
+                    } catch (error) {
+                        console.error(`Failed to send notification for milestone ${milestone._id}:`, error);
+                    }
+                
+                
+            }
 
+        }
         console.log(`${milestonesToUpdate.length} milestones checked and updated.`);
     } catch (error) {
         console.error('Error updating milestones:', error);
     }
 });
+

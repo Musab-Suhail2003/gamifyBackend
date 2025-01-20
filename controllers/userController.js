@@ -37,7 +37,7 @@ class UserController {
             await character.save();
             console.log('character made');
 
-            // Update user with character reference
+
             user.Character = character._id;
             await user.save();
 
@@ -96,35 +96,9 @@ class UserController {
                 message: err.message,
             });
         }
-    }
+  } 
 
-    async updateStats(req, res) {
-        const userId = req.params.id; // Get userId from the route parameter
-        const { coin, xp } = req.body; // Get coin and xp from the request body
-    
-        try {
-            // Ensure coin and xp are numbers
-            if (isNaN(coin) || isNaN(xp)) {
-                return res.status(400).json({ message: 'coin and xp must be numbers.' });
-            }
-    
-            // Call the model method
-            const updatedUser = await UserModel.addXpCoin(parseInt(coin), parseInt(xp), userId);
-    
-            if (!updatedUser) {
-                return res.status(404).json({ message: 'User not found.' });
-            }
-    
-            res.status(200).json({
-                message: 'XP and coin updated successfully!',
-                user: updatedUser,
-            });
-        } catch (err) {
-            console.error('Error updating XP and coin:', err);
-            res.status(500).json({ message: 'Failed to update XP and coin.', error: err.message });
-        }
-    }
-
+   
     async getAllUsers(req, res){
         try {
             const users = await User.find().sort({XP: -1});
